@@ -366,7 +366,7 @@ elif menu == "Jenis Penyakit":
         "spider_mites_two_spotted_spider_mite": {
             "desc": "Hama tungau menyebabkan bintik kuning dan jaring halus."
         },
-        "tomato_yellow_teaf_turl_virus": {
+        "tomato_yellow_leaf_curl_virus": {
             "desc": "Daun menguning, menggulung, dan pertumbuhan tanaman terhambat."
         }
     }
