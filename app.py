@@ -109,7 +109,7 @@ transform = transforms.Compose([
 st.sidebar.title("🍅 Deteksi Penyakit Tomat")
 
 try:
-    img = Image.open("images/logo.jpg")
+    img = Image.open("logo.jpg")
     st.sidebar.image(img, use_container_width=True, output_format="PNG", caption="Daun Tomat")
 except:
     st.sidebar.warning("Gambar logo.jpg tidak ditemukan")
