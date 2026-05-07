@@ -4,6 +4,7 @@ import os
 import torch
 import torchvision.transforms as transforms
 import torchvision
+import time
 
 # ==========================
 #    PAGE CONFIG
@@ -80,10 +81,8 @@ st.markdown(page_bg, unsafe_allow_html=True)
 # ==========================
 # LOAD MODEL
 # ==========================
-
 @st.cache_resource
 def load_model():
-
     checkpoint = torch.load("plant_diseases_modelfinal.pth", map_location="cpu")
 
     model = torchvision.models.mobilenet_v3_small(pretrained=False)
@@ -93,38 +92,37 @@ def load_model():
     model.eval()
 
     class_names = checkpoint['class_names']
-
     return model, class_names
 
-
-# ✅ WAJIB ADA INI
 model, class_names = load_model()
+
+# Transformasi (sama dengan validasi training)
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
 
 # ==========================
 #     SIDEBAR MENU
 # ==========================
 st.sidebar.title("🍅 Deteksi Penyakit Tomat")
 
-# Sidebar Image (Circle Frame)
 try:
-    img = Image.open("logo.jpg")
-    st.sidebar.image(img, use_container_width=True, output_format="PNG", caption="Daun Tomat",)
+    img = Image.open("images/logo.jpg")
+    st.sidebar.image(img, use_container_width=True, output_format="PNG", caption="Daun Tomat")
 except:
-    st.sidebar.warning("Sidebar image not found: images/sidebar_leaf.jpg")
+    st.sidebar.warning("Gambar logo.jpg tidak ditemukan")
 
 menu = st.sidebar.radio(
     "Navigasi",
     ["Beranda", "Upload Citra", "Jenis Penyakit"]
 )
 
-
-
-
 # ==========================
 #         BERANDA
 # ==========================
 if menu == "Beranda":
-
     st.markdown("""
         <style>
         .main-container {
@@ -156,11 +154,9 @@ if menu == "Beranda":
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='main-container'>", unsafe_allow_html=True)
-
     st.markdown("<h1 class='title'>🍅 Sistem Deteksi Penyakit Daun Tomat</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>Berbasis Convolutional Neural Network (CNN) & MobileNetV3</p>", unsafe_allow_html=True)
 
-    # Tentang Aplikasi
     st.markdown("""
         <div class='section-box'>
             <h3 style='color:#1b5e20;'>📌 Tentang Aplikasi</h3>
@@ -173,7 +169,6 @@ if menu == "Beranda":
         </div>
     """, unsafe_allow_html=True)
 
-    # Cara Menggunakan
     st.markdown("""
         <div class='section-box'>
             <h3 style='color:#1b5e20;'>🌿 Cara Menggunakan</h3>
@@ -186,15 +181,12 @@ if menu == "Beranda":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-
-
+# ==========================
+#       UPLOAD CITRA
+# ==========================
 elif menu == "Upload Citra":
     st.title("🔍 Deteksi Penyakit Daun Tomat")
 
-    # ==========================
-    # PILIH MODE INPUT
-    # ==========================
     mode = st.radio(
         "📌 Pilih Metode Input Citra",
         ["Kamera", "Upload File"],
@@ -203,197 +195,174 @@ elif menu == "Upload Citra":
 
     st.markdown("---")
 
-    # ==========================
     # MODE KAMERA
-    # ==========================
     if mode == "Kamera":
-
-        # Matikan upload file
         st.session_state.uploaded_image = None
-
         st.subheader("📷 Kamera")
+        st.caption("💡 Pastikan cahaya cukup. Kamera akan terbuka dalam beberapa detik.")
 
-        # Tombol aktifkan kamera
         if not st.session_state.kamera_aktif:
             if st.button("▶️ Aktifkan Kamera"):
                 st.session_state.kamera_aktif = True
+                st.rerun()
 
-        # Kamera hanya muncul setelah tombol ditekan
         if st.session_state.kamera_aktif:
             camera_image = st.camera_input("Ambil gambar daun tomat")
 
             if camera_image is not None:
                 st.session_state.camera_image = camera_image
-
-                st.image(
-                    camera_image,
-                    caption="Citra dari Kamera",
-                    width=300
-                )
+                st.image(camera_image, caption="Citra dari Kamera", width=300)
 
             if st.button("❌ Matikan Kamera"):
                 st.session_state.kamera_aktif = False
                 st.session_state.camera_image = None
+                st.rerun()
 
-    # ==========================
     # MODE UPLOAD FILE
-    # ==========================
     elif mode == "Upload File":
-
-        # Matikan kamera saat pindah menu
         st.session_state.kamera_aktif = False
         st.session_state.camera_image = None
-
         st.subheader("📁 Upload Citra Daun Tomat")
 
         uploaded_file = st.file_uploader(
-            "Upload gambar daun tomat",
+            "Upload gambar daun tomat (JPG, JPEG, PNG)",
             type=["jpg", "jpeg", "png"]
         )
 
         if uploaded_file is not None:
-            st.session_state.uploaded_image = uploaded_file
-
-            st.image(
-                uploaded_file,
-                caption="Citra dari Upload File",
-                width=300
-            )
+            try:
+                test_img = Image.open(uploaded_file).convert("RGB")
+                st.session_state.uploaded_image = uploaded_file
+                st.image(uploaded_file, caption="Citra dari Upload File", width=300)
+            except Exception as e:
+                st.error(f"Gambar tidak valid: {e}")
+                st.session_state.uploaded_image = None
 
     st.markdown("---")
 
-    # ==========================
     # TOMBOL PREDIKSI
-    # ==========================
     if st.button("🔮 Prediksi Penyakit"):
-
-        if st.session_state.camera_image is not None:
-            image = Image.open(st.session_state.camera_image).convert("RGB")
-
-        elif st.session_state.uploaded_image is not None:
-            image = Image.open(st.session_state.uploaded_image).convert("RGB")
-
-        else:
+        # Validasi ada gambar
+        if st.session_state.camera_image is None and st.session_state.uploaded_image is None:
             st.warning("Silakan ambil gambar atau upload citra terlebih dahulu.")
             st.stop()
 
-    # ==========================
-# TRANSFORM (PREPROCESSING)
-# ==========================
-        transform = transforms.Compose([
-            transforms.Resize((224,224)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-            mean=[0.485,0.456,0.406],
-            std=[0.229,0.224,0.225]
-            )
-        ])
+        # Load gambar
+        try:
+            if st.session_state.camera_image is not None:
+                image = Image.open(st.session_state.camera_image).convert("RGB")
+            else:
+                image = Image.open(st.session_state.uploaded_image).convert("RGB")
+        except Exception as e:
+            st.error(f"Gagal membaca gambar: {e}")
+            st.stop()
 
-# ==========================
-# PREPROCESSING IMAGE
-# ==========================
-        img = transform(image).unsqueeze(0)
-
-# ==========================
-# MODEL PREDICTION
-# ==========================
-        with torch.no_grad():
-            outputs = model(img)
-            probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
-            confidence, predicted = torch.max(probabilities, 0)
-
-# ==========================
-# RESULT
-# ==========================
-        predicted_class = class_names[predicted.item()]
-        confidence = round(confidence.item() * 100, 2)
-
-        st.subheader("📌 Hasil Prediksi")
-        st.success(f"Jenis Penyakit: {predicted_class}")
-        st.info(f"Tingkat Keyakinan Model: {confidence}%")
-
-        st.write("Index prediksi:", predicted.item())
-        st.write("Class name:", class_names[predicted.item()])
-
-        with torch.no_grad():
-            outputs = model(img)
-            probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
-            confidence, predicted = torch.max(probabilities, 0)
-
-# TAMPILKAN DI STREAMLIT
-        st.write("Probabilities:", probabilities)
-        st.write("Confidence:", confidence.item())
-        st.write("Predicted class:", predicted.item())
-
+        # Proses prediksi
+        with st.spinner("🔄 Sedang memproses gambar..."):
+            time.sleep(0.3)
+            
+            try:
+                img_tensor = transform(image).unsqueeze(0)
+                
+                with torch.no_grad():
+                    outputs = model(img_tensor)
+                    probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
+                    confidence, predicted = torch.max(probabilities, 0)
+                
+                predicted_class = class_names[predicted.item()]
+                confidence_percent = round(confidence.item() * 100, 2)
+                
+                # Hasil
+                st.subheader("📌 Hasil Prediksi")
+                
+                if predicted_class.lower() == "healthy":
+                    st.success(f"✅ Status: **{predicted_class}** (Daun Sehat)")
+                else:
+                    st.error(f"⚠️ Penyakit: **{predicted_class}**")
+                
+                st.info(f"📊 Tingkat Keyakinan: **{confidence_percent}%**")
+                st.progress(confidence_percent / 100)
+                
+                # Top 3 prediksi
+                st.write("### 📋 Detail Prediksi")
+                top3_prob, top3_idx = torch.topk(probabilities, 3)
+                for i in range(3):
+                    prob_val = top3_prob[i].item() * 100
+                    kelas = class_names[top3_idx[i].item()]
+                    st.write(f"- **{kelas}**: {prob_val:.2f}%")
+                    
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat prediksi: {e}")
 
 # ==========================
 #     JENIS PENYAKIT
 # ==========================
 elif menu == "Jenis Penyakit":
-    st.title("Daftar Jenis Penyakit Daun Tomat")
-    st.write("Berikut adalah daftar 11 jenis penyakit daun tomat lengkap dengan gambar contoh dan penjelasannya.")
-
-    import os
+    st.title("🍅 Daftar Jenis Penyakit Daun Tomat")
+    st.write("Berikut adalah daftar penyakit daun tomat yang dapat dideteksi oleh sistem:")
 
     penyakit_info = {
         "bacterial_spot": {
-            "desc": "Penyakit ini disebabkan oleh bakteri Xanthomonas campestris, ditandai dengan bercak kecil berwarna coklat kehitaman."
+            "nama": "Bacterial Spot",
+            "desc": "Disebabkan oleh bakteri Xanthomonas campestris. Gejala: bercak kecil berwarna coklat kehitaman."
         },
         "early_blight": {
-            "desc": "Disebabkan oleh jamur Alternaria solani dengan bercak coklat berbentuk lingkaran."
+            "nama": "Early Blight",
+            "desc": "Disebabkan oleh jamur Alternaria solani. Gejala: bercak coklat berbentuk lingkaran."
         },
         "healthy": {
-            "desc": "Daun tomat sehat berwarna hijau tanpa bercak atau kerusakan."
+            "nama": "Healthy (Sehat)",
+            "desc": "Daun tomat sehat, berwarna hijau tanpa bercak atau kerusakan."
         },
         "late_blight": {
-            "desc": "Disebabkan oleh Phytophthora infestans dengan bercak gelap yang cepat menyebar."
+            "nama": "Late Blight",
+            "desc": "Disebabkan oleh Phytophthora infestans. Gejala: bercak gelap yang cepat menyebar."
         },
         "leaf_mold": {
+            "nama": "Leaf Mold",
             "desc": "Jamur Passalora fulva menyebabkan bercak kuning dan lapisan jamur di bawah daun."
         },
-        "tomato_mosaic_virus": {
+        "mosaic_virus": {
+            "nama": "Mosaic Virus",
             "desc": "Virus menyebabkan pola mosaik hijau-kuning pada daun."
         },
-        "powdery_mildew": {
-            "desc": "Lapisan putih seperti tepung pada permukaan daun."
-        },
         "septoria_leaf_spot": {
+            "nama": "Septoria Leaf Spot",
             "desc": "Bercak kecil abu-abu dengan tepi gelap."
         },
         "target_spot": {
+            "nama": "Target Spot",
             "desc": "Bercak berbentuk lingkaran seperti target."
         },
-        "spider_mites_two_spotted_spider_mite": {
+        "twospotted_spider_mite": {
+            "nama": "Twospotted Spider Mite",
             "desc": "Hama tungau menyebabkan bintik kuning dan jaring halus."
         },
-        "tomato_yellow_leaf_curl_virus": {
-            "desc": "Daun menguning, menggulung, dan pertumbuhan tanaman terhambat."
+        "yellow_leaf_curl_virus": {
+            "nama": "Yellow Leaf Curl Virus",
+            "desc": "Daun menguning, menggulung, dan pertumbuhan terhambat."
+        },
+        "powdery_mildew": {
+            "nama": "Powdery Mildew",
+            "desc": "Lapisan putih seperti tepung pada permukaan daun."
         }
     }
 
-    # GRID 2 KOLOM (biar tidak panjang ke bawah)
-    outer_cols = st.columns(2)
-
-    for i, (nama, info) in enumerate(penyakit_info.items()):
-
-        # Ambil gambar langsung dari folder images
-        img_path = f"{nama}.jpg"
-
-        with outer_cols[i % 2]:
-
-            col1, col2 = st.columns([1, 2])
-
-            with col1:
-                if os.path.exists(img_path):
-                    st.image(img_path, width=120)
-                else:
-                    st.warning(f"Gambar tidak ditemukan: {nama}.jpg")
-
-            with col2:
-                st.subheader(nama)
-                st.write(info["desc"])
-
-            st.markdown("---")
-
-        if (i + 1) % 2 == 0:
-            outer_cols = st.columns(2)
+    for i, class_name in enumerate(class_names):
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            if class_name in penyakit_info:
+                info = penyakit_info[class_name]
+                st.subheader(f"🌿 {info['nama']}")
+                st.write(info['desc'])
+            else:
+                st.subheader(f"🌿 {class_name.replace('_', ' ').title()}")
+                st.write("Informasi sedang diperbarui")
+        
+        with col2:
+            img_path = f"images/{class_name}.jpg"
+            if os.path.exists(img_path):
+                st.image(img_path, width=200)
+            else:
+                st.info(f"🖼️ Gambar belum tersedia")
