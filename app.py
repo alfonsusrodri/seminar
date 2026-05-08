@@ -325,11 +325,11 @@ elif menu == "Jenis Penyakit":
             "nama": "Target Spot",
             "desc": "Bercak berbentuk lingkaran seperti target."
         },
-        "twospotted_spider_mite": {
+        "spider_mites_two_spotted_spider_mite": {
             "nama": "Twospotted Spider Mite",
             "desc": "Hama tungau menyebabkan bintik kuning dan jaring halus."
         },
-        "yellow_leaf_curl_virus": {
+        "tomato_yellow_leaf_curl_virus": {
             "nama": "Yellow Leaf Curl Virus",
             "desc": "Daun menguning, menggulung, dan pertumbuhan terhambat."
         },
