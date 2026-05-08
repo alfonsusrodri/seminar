@@ -67,9 +67,6 @@ h1, h2, h3 {
 # ==========================
 # SESSION STATE INIT
 # ==========================
-if "kamera_aktif" not in st.session_state:
-    st.session_state.kamera_aktif = False
-
 if "camera_image" not in st.session_state:
     st.session_state.camera_image = None
 
@@ -96,7 +93,7 @@ def load_model():
 
 model, class_names = load_model()
 
-# Transformasi (sama dengan validasi training)
+# Transformasi
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -195,32 +192,24 @@ elif menu == "Upload Citra":
 
     st.markdown("---")
 
+    # ==========================
     # MODE KAMERA
+    # ==========================
     if mode == "Kamera":
         st.session_state.uploaded_image = None
         st.subheader("📷 Kamera")
-        st.caption("💡 Pastikan cahaya cukup. Kamera akan terbuka dalam beberapa detik.")
+        st.caption("💡 Pastikan cahaya cukup. Gunakan kamera HP Anda.")
 
-        if not st.session_state.kamera_aktif:
-            if st.button("▶️ Aktifkan Kamera"):
-                st.session_state.kamera_aktif = True
-                st.rerun()
+        camera_image = st.camera_input("Ambil gambar daun tomat")
 
-        if st.session_state.kamera_aktif:
-            camera_image = st.camera_input("Ambil gambar daun tomat")
+        if camera_image is not None:
+            st.session_state.camera_image = camera_image
+            st.image(camera_image, caption="Citra dari Kamera", width=300)
 
-            if camera_image is not None:
-                st.session_state.camera_image = camera_image
-                st.image(camera_image, caption="Citra dari Kamera", width=300)
-
-            if st.button("❌ Matikan Kamera"):
-                st.session_state.kamera_aktif = False
-                st.session_state.camera_image = None
-                st.rerun()
-
+    # ==========================
     # MODE UPLOAD FILE
+    # ==========================
     elif mode == "Upload File":
-        st.session_state.kamera_aktif = False
         st.session_state.camera_image = None
         st.subheader("📁 Upload Citra Daun Tomat")
 
@@ -240,7 +229,9 @@ elif menu == "Upload Citra":
 
     st.markdown("---")
 
+    # ==========================
     # TOMBOL PREDIKSI
+    # ==========================
     if st.button("🔮 Prediksi Penyakit"):
         # Validasi ada gambar
         if st.session_state.camera_image is None and st.session_state.uploaded_image is None:
@@ -361,7 +352,7 @@ elif menu == "Jenis Penyakit":
                 st.write("Informasi sedang diperbarui")
         
         with col2:
-            img_path = f"{class_name}.jpg"
+            img_path = f"images/{class_name}.jpg"
             if os.path.exists(img_path):
                 st.image(img_path, width=200)
         
