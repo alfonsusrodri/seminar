@@ -5,6 +5,10 @@ import torch
 import torchvision.transforms as transforms
 import torchvision
 import time
+from streamlit_webrtc import webrtc_streamer
+import av
+import cv2
+import numpy as np
 
 # ==========================
 #    PAGE CONFIG
@@ -61,6 +65,17 @@ h1, h2, h3 {
     display: block;
     border: 4px solid #4caf50;
 }
+
+/* CSS untuk membuat kamera full width */
+.video-container {
+    width: 100%;
+    max-width: 100%;
+}
+video {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 400px !important;
+}
 </style>
 """
 
@@ -72,6 +87,12 @@ if "camera_image" not in st.session_state:
 
 if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
+
+if "photo_taken" not in st.session_state:
+    st.session_state.photo_taken = False
+
+if "captured_frame" not in st.session_state:
+    st.session_state.captured_frame = None
 
 st.markdown(page_bg, unsafe_allow_html=True)
 
@@ -193,24 +214,54 @@ elif menu == "Upload Citra":
     st.markdown("---")
 
     # ==========================
-    # MODE KAMERA
+    # MODE KAMERA (DENGAN WEBRTC FULL LAYAR)
     # ==========================
     if mode == "Kamera":
         st.session_state.uploaded_image = None
-        st.subheader("📷 Kamera")
-        st.caption("💡 Pastikan cahaya cukup. Gunakan kamera HP Anda.")
-
-        camera_image = st.camera_input("Ambil gambar daun tomat")
-
-        if camera_image is not None:
-            st.session_state.camera_image = camera_image
-            st.image(camera_image, caption="Citra dari Kamera", width=300)
+        st.subheader("📷 Kamera Full Layar")
+        st.caption("💡 Pastikan cahaya cukup. Tekan START untuk mengaktifkan kamera.")
+        
+        # WebRTC streamer untuk kamera full layar
+        ctx = webrtc_streamer(
+            key="user-camera",
+            video_processor_factory=None,
+            rtc_configuration={
+                "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+            },
+            media_stream_constraints={"video": True, "audio": False},
+        )
+        
+        # Tombol untuk mengambil gambar
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("📸 Ambil Gambar"):
+                if ctx and ctx.video_receiver:
+                    try:
+                        frame = ctx.video_receiver.get_frame()
+                        if frame is not None:
+                            img = frame.to_ndarray(format="bgr24")
+                            st.session_state.captured_frame = img
+                            st.session_state.photo_taken = True
+                            st.success("Gambar berhasil diambil!")
+                            st.rerun()
+                    except:
+                        st.warning("Kamera belum siap. Tunggu beberapa detik.")
+                else:
+                    st.warning("Kamera belum aktif. Tekan START dulu.")
+        
+        # Tampilkan preview gambar yang diambil
+        if st.session_state.photo_taken and st.session_state.captured_frame is not None:
+            st.subheader("📸 Preview Gambar")
+            st.image(st.session_state.captured_frame, channels="BGR", use_container_width=True)
+            st.session_state.camera_image = st.session_state.captured_frame
 
     # ==========================
     # MODE UPLOAD FILE
     # ==========================
     elif mode == "Upload File":
         st.session_state.camera_image = None
+        st.session_state.captured_frame = None
+        st.session_state.photo_taken = False
         st.subheader("📁 Upload Citra Daun Tomat")
 
         uploaded_file = st.file_uploader(
@@ -222,7 +273,7 @@ elif menu == "Upload Citra":
             try:
                 test_img = Image.open(uploaded_file).convert("RGB")
                 st.session_state.uploaded_image = uploaded_file
-                st.image(uploaded_file, caption="Citra dari Upload File", width=300)
+                st.image(uploaded_file, caption="Citra dari Upload File", use_container_width=True)
             except Exception as e:
                 st.error(f"Gambar tidak valid: {e}")
                 st.session_state.uploaded_image = None
@@ -234,14 +285,19 @@ elif menu == "Upload Citra":
     # ==========================
     if st.button("🔮 Prediksi Penyakit"):
         # Validasi ada gambar
-        if st.session_state.camera_image is None and st.session_state.uploaded_image is None:
-            st.warning("Silakan ambil gambar atau upload citra terlebih dahulu.")
+        has_camera_image = st.session_state.photo_taken and st.session_state.captured_frame is not None
+        has_upload_image = st.session_state.uploaded_image is not None
+        
+        if not has_camera_image and not has_upload_image:
+            st.warning("Silakan ambil gambar dari kamera (tekan START lalu Ambil Gambar) atau upload file terlebih dahulu.")
             st.stop()
 
         # Load gambar
         try:
-            if st.session_state.camera_image is not None:
-                image = Image.open(st.session_state.camera_image).convert("RGB")
+            if has_camera_image:
+                # Konversi frame numpy ke PIL Image
+                img_rgb = cv2.cvtColor(st.session_state.captured_frame, cv2.COLOR_BGR2RGB)
+                image = Image.fromarray(img_rgb)
             else:
                 image = Image.open(st.session_state.uploaded_image).convert("RGB")
         except Exception as e:
