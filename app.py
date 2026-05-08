@@ -313,7 +313,7 @@ elif menu == "Jenis Penyakit":
             "nama": "Leaf Mold",
             "desc": "Jamur Passalora fulva menyebabkan bercak kuning dan lapisan jamur di bawah daun."
         },
-        "mosaic_virus": {
+        "tomato_mosaic_virus": {
             "nama": "Mosaic Virus",
             "desc": "Virus menyebabkan pola mosaik hijau-kuning pada daun."
         },
@@ -325,11 +325,11 @@ elif menu == "Jenis Penyakit":
             "nama": "Target Spot",
             "desc": "Bercak berbentuk lingkaran seperti target."
         },
-        "spider_mites_two_spotted_spider_mite": {
+        "twospotted_spider_mite": {
             "nama": "Twospotted Spider Mite",
             "desc": "Hama tungau menyebabkan bintik kuning dan jaring halus."
         },
-        "tomato_yellow_leaf_curl_virus": {
+        "yellow_leaf_curl_virus": {
             "nama": "Yellow Leaf Curl Virus",
             "desc": "Daun menguning, menggulung, dan pertumbuhan terhambat."
         },
