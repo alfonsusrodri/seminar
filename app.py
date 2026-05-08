@@ -352,7 +352,7 @@ elif menu == "Jenis Penyakit":
                 st.write("Informasi sedang diperbarui")
         
         with col2:
-            img_path = f"images/{class_name}.jpg"
+            img_path = f"{class_name}.jpg"
             if os.path.exists(img_path):
                 st.image(img_path, width=200)
         
