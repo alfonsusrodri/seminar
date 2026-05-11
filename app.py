@@ -313,7 +313,7 @@ elif menu == "Jenis Penyakit":
             "nama": "Leaf Mold",
             "desc": "Jamur Passalora fulva menyebabkan bercak kuning dan lapisan jamur di bawah daun."
         },
-        "tomato_mosaic_virus": {
+        "mosaic_virus": {
             "nama": "Mosaic Virus",
             "desc": "Virus menyebabkan pola mosaik hijau-kuning pada daun."
         },
