@@ -196,10 +196,10 @@ elif menu == "Upload Citra":
     # MODE KAMERA
     # ==========================
     if mode == "Kamera":
-    st.session_state.uploaded_image = None
+        st.session_state.uploaded_image = None
 
-    st.subheader("📷 Kamera")
-    st.caption("Gunakan kamera belakang untuk hasil terbaik")
+        st.subheader("📷 Kamera")
+        st.caption("Gunakan kamera belakang untuk hasil terbaik")
 
     camera_image = st.camera_input(
         "Ambil gambar daun tomat",
