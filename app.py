@@ -196,15 +196,24 @@ elif menu == "Upload Citra":
     # MODE KAMERA
     # ==========================
     if mode == "Kamera":
-        st.session_state.uploaded_image = None
-        st.subheader("📷 Kamera")
-        st.caption("💡 Pastikan cahaya cukup. Gunakan kamera HP Anda.")
+    st.session_state.uploaded_image = None
 
-        camera_image = st.camera_input("Ambil gambar daun tomat")
+    st.subheader("📷 Kamera")
+    st.caption("Gunakan kamera belakang untuk hasil terbaik")
 
-        if camera_image is not None:
-            st.session_state.camera_image = camera_image
-            st.image(camera_image, caption="Citra dari Kamera", width=300)
+    camera_image = st.camera_input(
+        "Ambil gambar daun tomat",
+        label_visibility="collapsed"
+    )
+
+    if camera_image is not None:
+        st.session_state.camera_image = camera_image
+
+        st.image(
+            camera_image,
+            caption="Hasil Kamera",
+            use_container_width=True
+        )
 
     # ==========================
     # MODE UPLOAD FILE
