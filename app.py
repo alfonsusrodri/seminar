@@ -275,7 +275,7 @@ elif menu == "Upload Citra":
                 st.progress(confidence_percent / 100)
                 
                 # Top 3 prediksi
-                st.write("### 📋 Detail Prediksi")
+                st.write("### 📋 Kemungkinan Penyakit Teratas")
                 top3_prob, top3_idx = torch.topk(probabilities, 3)
                 for i in range(3):
                     prob_val = top3_prob[i].item() * 100
