@@ -85,7 +85,7 @@ def load_model():
     model = torchvision.models.mobilenet_v3_small(pretrained=False)
     model.classifier[3] = torch.nn.Linear(model.classifier[3].in_features, 11)
 
-    model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint['trained_state_dict'])  # ← ganti key-nya
     model.eval()
 
     class_names = checkpoint['class_names']
