@@ -80,7 +80,7 @@ st.markdown(page_bg, unsafe_allow_html=True)
 # ==========================
 @st.cache_resource
 def load_model():
-    checkpoint = torch.load("plant_diseases_modelfinal.pth", map_location="cpu")
+    checkpoint = torch.load("plant_diseases_coba1.pth", map_location="cpu")
 
     model = torchvision.models.mobilenet_v3_small(pretrained=False)
     model.classifier[3] = torch.nn.Linear(model.classifier[3].in_features, 11)
